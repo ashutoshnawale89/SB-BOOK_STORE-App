@@ -33,14 +33,16 @@ public class UserService implements IUserService{
     public String registerUser(UserDTO userdto) {
         User newUser = new User(userdto);
         userRepo.save(newUser);
-        String token = util.createToken(newUser.getUserID());
-        mailService.sendEmail(userdto.getEmail(),"Account Sign-up successfully","Hello" + newUser.getFullName() + " Your Account has been created.Your token is " + token + " Keep this token safe to access your account in future ");
-        return token;
+        String message= newUser.getFullName();
+        mailService.sendEmail(userdto.getEmail(),"Account Registration successfully","Hello" + newUser.getFullName() + " Your Account has been created.");
+        return message;
     }
     //Ability to serve controller's user login api call
     public User userLogin(LoginDTO logindto) {
-        Optional<User> newUser = userRepo.findByMail(logindto.getEmail());
+        Optional<User> newUser = userRepo.findByEmail(logindto.getEmail());
         if(logindto.getEmail().equals(newUser.get().getEmail()) && logindto.getPassword().equals(newUser.get().getPassword())) {
+            String token = util.createToken(logindto.getEmail());
+            mailService.sendEmail(logindto.getEmail(),"Account Sign-up successfully","Hello Your Account has been Loggin Successfully.Your token is " + token );
             log.info("SuccessFully Logged In");
             return newUser.get();
         }
@@ -52,13 +54,13 @@ public class UserService implements IUserService{
     }
     //Ability to serve controller's retrieve user record by token api call
     public User getRecordByToken(String token){
-        Integer id = util.decodeToken(token);
-        Optional<User> 	user = userRepo.findById(id);
+        String email = util.decodeToken(token);
+        Optional<User> 	user = userRepo.findByEmail(email);
         if(user.isEmpty()) {
             throw new BookStoreException("User Record doesn't exists");
         }
         else {
-            log.info("Record retrieved successfully for given token having id "+id);
+            log.info("Record retrieved successfully for given token having id "+email);
             return user.get();
         }
     }
@@ -94,8 +96,8 @@ public class UserService implements IUserService{
     }
     //Ability to serve controller's change password api call
     public User changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
-        Optional<User> user = userRepo.findByMail(dto.getEmail());
-        String generatedToken = util.createToken(user.get().getUserID());
+        Optional<User> user = userRepo.findByEmail(dto.getEmail());
+        String generatedToken = util.createToken(user.get().getEmail());
         mailService.sendEmail(user.get().getEmail(),"Welcome "+user.get().getFullName(),generatedToken);
         if(user.isEmpty()) {
             throw new BookStoreException("User doesn't exists");
@@ -114,12 +116,24 @@ public class UserService implements IUserService{
     }
     //Created to serve controller's retrieve user record by email api call
     public User getUserByEmailId(String email) {
-        Optional<User> newUser = userRepo.findByMail(email);
+        Optional<User> newUser = userRepo.findByEmail(email);
         if (newUser.isEmpty()) {
             throw new BookStoreException("User record does not exist");
         } else {
             return newUser.get();
         }
     }
+    public String deleteUserByToken(String token) {
+        String email = util.decodeToken(token);
+        Optional<User> 	user = userRepo.findByEmail(email);
+        if(user.isEmpty()) {
+            throw new BookStoreException("User Record doesn't exists");
+        }
+        else {
+            userRepo.deleteById(user.get().getUserID());
+            log.info("Record Delete successfully for given token having id "+email);
+            return "Record Delete successfully for given token id is "+token ;
+        }
 
+    }
 }

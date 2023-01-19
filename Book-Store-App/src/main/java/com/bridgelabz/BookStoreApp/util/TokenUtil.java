@@ -14,7 +14,26 @@ public class TokenUtil {
     private static final String TOKEN_SECRET = "Lucifer";
 
 
-    public  String createToken(int id)   {
+//    public  String createToken(int id)   {
+//        try {
+//            //to set algorithm
+//            Algorithm algorithm = Algorithm.HMAC256(TOKEN_SECRET);
+//
+//            String token = JWT.create()
+//                    .withClaim("user_id", id)
+//                    .sign(algorithm);
+//            return token;
+//        } catch (JWTCreationException exception) {
+//            exception.printStackTrace();
+//            //log Token Signing Failed
+//        } catch (IllegalArgumentException e) {
+//            // TODO Auto-generated catch block
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
+
+    public  String createToken(String id)   {
         try {
             //to set algorithm
             Algorithm algorithm = Algorithm.HMAC256(TOKEN_SECRET);
@@ -38,9 +57,9 @@ public class TokenUtil {
      * @param token
      * @return
      */
-    public int decodeToken(String token)
+    public String decodeToken(String token)
     {
-        int userid;
+        String userid;
         //for verification algorithm
         Verification verification = null;
         try {
@@ -54,7 +73,7 @@ public class TokenUtil {
         DecodedJWT decodedjwt=jwtverifier.verify(token);
 
         Claim claim=decodedjwt.getClaim("user_id");
-        userid=claim.asInt();
+        userid=claim.asString();
         return userid;
 
     }

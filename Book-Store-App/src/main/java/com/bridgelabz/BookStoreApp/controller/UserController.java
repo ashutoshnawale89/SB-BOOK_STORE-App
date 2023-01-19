@@ -23,7 +23,7 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<ResponseDTO> registerUser(@Valid @RequestBody UserDTO userdto){
         ResponseDTO dto = new ResponseDTO("User Record created successfully !",userService.registerUser(userdto));
-        return new ResponseEntity(dto, HttpStatus.CREATED);
+        return new ResponseEntity(dto,HttpStatus.CREATED);
     }
     //Ability to call api to login user
     @PostMapping("/login")
@@ -49,22 +49,30 @@ public class UserController {
         ResponseDTO dto = new ResponseDTO("Record retrieved successfully !",userService.getRecord(id));
         return new ResponseEntity(dto,HttpStatus.OK);
     }
-    //Ability to call api to retrieve user record by token
-    @GetMapping("/retrieveByToken/{token}")
-    public ResponseEntity<ResponseDTO> getRecordByToken(@PathVariable String token){
-        ResponseDTO dto = new ResponseDTO("Record retrieved successfully !",userService.getRecordByToken(token));
-        return new ResponseEntity(dto,HttpStatus.OK);
-    }
     //Ability to call api to update user record by id
     @PutMapping("/update/{id}")
     public ResponseEntity<ResponseDTO> updateRecord(@PathVariable Integer id, @Valid @RequestBody UserDTO userdto){
         ResponseDTO dto = new ResponseDTO("Record updated successfully !",userService.updateRecord(id,userdto));
         return new ResponseEntity(dto,HttpStatus.ACCEPTED);
     }
+    //Ability to call api to retrieve user record by token
+    @GetMapping("/retrieveByToken/{token}")
+    public ResponseEntity<ResponseDTO> getRecordByToken(@PathVariable String token){
+        ResponseDTO dto = new ResponseDTO("Record retrieved successfully !",userService.getRecordByToken(token));
+        return new ResponseEntity(dto,HttpStatus.OK);
+    }
+
     //Ability to call api to retrieve user record by email
     @GetMapping("/retrieveByemail/{email}")
     public ResponseEntity<ResponseDTO> getUserByEmailId(@PathVariable String email) {
         ResponseDTO responseDTO = new ResponseDTO("Record for email successfully", userService.getUserByEmailId(email));
         return new ResponseEntity(responseDTO, HttpStatus.OK);
     }
+    @DeleteMapping("/deletebytoken/{token}")
+    public ResponseEntity<ResponseDTO> deleteRecordByToken(@PathVariable String token) {
+        ResponseDTO dto= new ResponseDTO("Record Delete Successfully !",userService.deleteUserByToken(token));
+        return new ResponseEntity(dto,HttpStatus.OK);
+    }
+
+
 }

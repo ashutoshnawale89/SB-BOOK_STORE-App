@@ -21,4 +21,5 @@ public interface IUserService {
     public User updateRecord(Integer id, UserDTO dto);
     public User changePassword(ChangePasswordDTO dto);
     public User getUserByEmailId(String email);
+    public String deleteUserByToken(String token);
 }
