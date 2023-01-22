@@ -22,6 +22,13 @@ public class BookStoreExceptionHandler {
         ResponseDTO responseDTO = new ResponseDTO("Exception while processing REST requests",errMesg);
         return new ResponseEntity<ResponseDTO>(responseDTO, HttpStatus.BAD_REQUEST);
     }
+    private static final String message="Exception While Processing REST Request";
+
+    @ExceptionHandler(BookStoreException.class)
+    public ResponseEntity<ResponseDTO> handleBookStoreException(BookStoreException exception) {
+        ResponseDTO responseDTO=new ResponseDTO("Exception while Processing REST Request ",exception.getMessage());
+        return new ResponseEntity<ResponseDTO>(responseDTO,HttpStatus.BAD_REQUEST);
+    }
 
 
 }

@@ -73,6 +73,4 @@ public class UserController {
         ResponseDTO dto= new ResponseDTO("Record Delete Successfully !",userService.deleteUserByToken(token));
         return new ResponseEntity(dto,HttpStatus.OK);
     }
-
-
 }

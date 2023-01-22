@@ -31,11 +31,17 @@ public class UserService implements IUserService{
 
     //Ability to serve controller's insert user record api call
     public String registerUser(UserDTO userdto) {
-        User newUser = new User(userdto);
-        userRepo.save(newUser);
-        String message= newUser.getFullName();
-        mailService.sendEmail(userdto.getEmail(),"Account Registration successfully","Hello" + newUser.getFullName() + " Your Account has been created.");
-        return message;
+        Optional<User> user=userRepo.findByEmail(userdto.getEmail());
+        if (!user.isEmpty()) {
+            throw new BookStoreException("Email is alredy Register ");
+        }
+        else {
+            User newUser = new User(userdto);
+            userRepo.save(newUser);
+            String message = newUser.getFullName();
+            mailService.sendEmail(userdto.getEmail(), "Account Registration successfully", "Hello" + newUser.getFullName() + " Your Account has been created.");
+            return message;
+        }
     }
     //Ability to serve controller's user login api call
     public User userLogin(LoginDTO logindto) {
@@ -97,16 +103,16 @@ public class UserService implements IUserService{
     //Ability to serve controller's change password api call
     public User changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
         Optional<User> user = userRepo.findByEmail(dto.getEmail());
-        String generatedToken = util.createToken(user.get().getEmail());
-        mailService.sendEmail(user.get().getEmail(),"Welcome "+user.get().getFullName(),generatedToken);
         if(user.isEmpty()) {
             throw new BookStoreException("User doesn't exists");
         }
         else {
-            if(dto.getToken().equals(generatedToken) ) {
+            if(dto.getEmail().equals(user.get().getEmail())){
                 user.get().setPassword(dto.getNewPassword());
                 userRepo.save(user.get());
                 log.info("Password changes successfully");
+                mailService.sendEmail(user.get().getEmail(),"Password Change Successfully"+user.get().getFullName(),"Password is :"+user.get().getPassword());
+
                 return user.get();
             }
             else {
