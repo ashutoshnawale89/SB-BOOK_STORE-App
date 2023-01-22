@@ -3,6 +3,7 @@ package com.bridgelabz.BookStoreApp.entity;
 import com.bridgelabz.BookStoreApp.dto.BookDTO;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Data;
 import lombok.NoArgsConstructor;

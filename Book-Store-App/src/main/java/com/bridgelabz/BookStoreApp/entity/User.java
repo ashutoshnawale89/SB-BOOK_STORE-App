@@ -2,10 +2,7 @@ package com.bridgelabz.BookStoreApp.entity;
 
 
 import com.bridgelabz.BookStoreApp.dto.UserDTO;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
