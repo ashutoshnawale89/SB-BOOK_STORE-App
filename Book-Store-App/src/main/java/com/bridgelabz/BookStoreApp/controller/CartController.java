@@ -24,7 +24,8 @@ public class CartController {
     @PostMapping("/insert")
     public ResponseEntity<ResponseDTO> insertBook(@Valid @RequestBody CartDTO cartdto){
         ResponseDTO dto = new ResponseDTO("Book Added To Cart successfully !",cartService.insertCart(cartdto));
-        return new ResponseEntity(dto, HttpStatus.CREATED);
+        System.out.println("Cart record updated successfully  "+ dto);
+        return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
     //Ability to call api to retrieve all card records
     @GetMapping("/retrieveAllCarts")
@@ -61,6 +62,11 @@ public class CartController {
     public ResponseEntity<ResponseDTO> deleteBooks() {
         List<Cart> books = cartService.deleteAllFromCart();
         return new ResponseEntity(books, HttpStatus.OK);
+    }
+    @PutMapping("/updateCartbyuserid/{id}/{quantity}")
+    public ResponseEntity<ResponseDTO> updateCartRecordByUserID(@PathVariable Integer id,@PathVariable Integer quantity){
+        ResponseDTO dto = new ResponseDTO("Record updated successfully By using UserID!",cartService.updateCartRecordByUserID(id,quantity));
+        return new ResponseEntity(dto,HttpStatus.ACCEPTED);
     }
 
 

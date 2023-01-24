@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Cart {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Integer cartID;
     @OneToOne()
     @JoinColumn(name="userID")
@@ -19,15 +19,19 @@ public class Cart {
     private Book book;
     private Integer quantity;
 
+    private Integer totalPrice;
+
     public Cart(Integer cartID,Integer quantity, Book book, User user) {
         this.cartID= cartID;
         this.quantity = quantity;
         this.book=book;
         this.user=user;
+        this.totalPrice=quantity*book.getPrice();
     }
     public Cart(Integer quantity, Book book, User user) {
         this.quantity = quantity;
         this.book=book;
         this.user=user;
+        this.totalPrice=quantity*book.getPrice();
     }
 }

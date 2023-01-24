@@ -47,7 +47,7 @@ public class UserService implements IUserService{
     public User userLogin(LoginDTO logindto) {
         Optional<User> newUser = userRepo.findByEmail(logindto.getEmail());
         if(logindto.getEmail().equals(newUser.get().getEmail()) && logindto.getPassword().equals(newUser.get().getPassword())) {
-            String token = util.createToken(logindto.getEmail());
+            String token = util.createToken(newUser.get().getUserID());
             mailService.sendEmail(logindto.getEmail(),"Account Sign-up successfully","Hello Your Account has been Loggin Successfully.Your token is " + token );
             log.info("SuccessFully Logged In");
             return newUser.get();
@@ -60,13 +60,13 @@ public class UserService implements IUserService{
     }
     //Ability to serve controller's retrieve user record by token api call
     public User getRecordByToken(String token){
-        String email = util.decodeToken(token);
-        Optional<User> 	user = userRepo.findByEmail(email);
+        Integer userIdToken = util.decodeToken(token);
+        Optional<User> 	user = userRepo.findById(userIdToken);
         if(user.isEmpty()) {
             throw new BookStoreException("User Record doesn't exists");
         }
         else {
-            log.info("Record retrieved successfully for given token having id "+email);
+            log.info("Record retrieved successfully for given token having id "+userIdToken);
             return user.get();
         }
     }
@@ -130,14 +130,14 @@ public class UserService implements IUserService{
         }
     }
     public String deleteUserByToken(String token) {
-        String email = util.decodeToken(token);
-        Optional<User> 	user = userRepo.findByEmail(email);
+        Integer userIdToken = util.decodeToken(token);
+        Optional<User> 	user = userRepo.findById(userIdToken);
         if(user.isEmpty()) {
             throw new BookStoreException("User Record doesn't exists");
         }
         else {
             userRepo.deleteById(user.get().getUserID());
-            log.info("Record Delete successfully for given token having id "+email);
+            log.info("Record Delete successfully for given token having id "+userIdToken);
             return "Record Delete successfully for given token id is "+token ;
         }
 

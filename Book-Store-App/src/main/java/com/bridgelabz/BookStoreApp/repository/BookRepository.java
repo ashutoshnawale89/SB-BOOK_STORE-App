@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, Integer> {
-    @Query(value="select * from book where book_name LIKE :bookName%",nativeQuery=true)
+    @Query(value="select * from book where bookName LIKE :bookName%",nativeQuery=true)
     public List<Book> findByBookName(String bookName);
 
     @Query(value="select * from book ORDER BY price",nativeQuery = true)
@@ -18,8 +18,9 @@ public interface BookRepository extends JpaRepository<Book, Integer> {
     @Query(value="select * from book ORDER BY price DESC",nativeQuery = true)
     public List<Book> sortBooksDesc();
 
-    @Query(value="select * from book where bookid =:id",nativeQuery=true)
-    public List<Book> findByBookId(Integer id);
+    @Query(value="select * from book where bookId =:bookId",nativeQuery=true)
+    public List<Book> findByBookId(Integer bookId);
+
 
 
 }

@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name="UserDetails")
 public class User {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Integer userID;
     private  String fullName;
     private String email;
