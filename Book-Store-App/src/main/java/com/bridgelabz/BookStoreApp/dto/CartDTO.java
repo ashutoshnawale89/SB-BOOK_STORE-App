@@ -1,13 +1,15 @@
-package com.bridgelabz.BookStoreApp.dto;
+package com.bridgelabz.bookstoreapp.dto;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.*;
+
 
 @Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class CartDTO {
-    private Integer userID;
-    private Integer bookID;
-    @NotNull(message="Book quantity yet to be provided")
-    private Integer quantity;
-
+    public int bookId;
+    public int quantity;
 }
+

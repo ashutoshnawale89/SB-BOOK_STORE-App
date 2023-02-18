@@ -1,21 +1,22 @@
-package com.bridgelabz.BookStoreApp.service;
+package com.bridgelabz.bookstoreapp.service;
 
-import com.bridgelabz.BookStoreApp.dto.OrderDTO;
-import com.bridgelabz.BookStoreApp.entity.Order;
+import com.bridgelabz.bookstoreapp.dto.OrderDTO;
+import com.bridgelabz.bookstoreapp.model.OrderData;
 
+import javax.mail.MessagingException;
 import java.util.List;
 
-//Interface to achieve abstraction
 public interface IOrderService {
-    public Order insertOrder(OrderDTO orderdto);
 
-    public List<Order> getAllOrderRecords();
+    String cancelOrder(int orderId, int userId);
+    List<OrderData> userOrders(int userId);
 
-    public Order getOrderRecord(Integer id);
+    OrderData  placeOrder(int userId, OrderDTO orderDTO) throws MessagingException;
 
-    public Order updateOrderRecord(Integer id,OrderDTO dto);
+    List<OrderData> getAllOrders();
 
-    public Order deleteOrderRecord(Integer id);
+    int getAllOrdersNumber();
+
 
 
 }

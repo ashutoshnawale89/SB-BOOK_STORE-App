@@ -1,26 +1,24 @@
-package com.bridgelabz.BookStoreApp.repository;
+package com.bridgelabz.bookstoreapp.repository;
 
-import com.bridgelabz.BookStoreApp.entity.Cart;
+import com.bridgelabz.bookstoreapp.model.CartData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+//import java.util.Optional;
+
 
 @Repository
-public interface CartRepository extends JpaRepository<Cart, Integer> {
-    @Query(value="select * from cart where bookid =:bookId",nativeQuery =true)
-    List<Cart> findByBookId(Integer bookId);
+public interface CartRepository extends JpaRepository<CartData, Integer> {
 
-    @Query(value="select * from cart where userid =:userId",nativeQuery =true)
-    List<Cart> findByUserId(Integer userId);
+    @Query("from CartData WHERE cartId=:cartId  ")
+    CartData findByCartId( int cartId);
 
-    @Query(value="select * from cart where userid =:userId and bookid =:bookId",nativeQuery =true)
-    List<Cart> findByUserAndBookId(Integer userId, Integer bookId);
+    @Query("from CartData WHERE user.userId=:userId  ")
+    List<CartData> findByUserId(int userId);
 
-    @Query(value="select * from cart where userid =:userID",nativeQuery =true)
-    List<Cart> findByUserID(Integer userID);
-
-
-
+    @Query(" FROM CartData  WHERE book.bookId=:bookId AND user.userId=:userId")
+    Integer getExistingItemOfCart(int bookId, int userId);
 }
+

@@ -1,9 +1,9 @@
-package com.bridgelabz.BookStoreApp.dto;
+package com.bridgelabz.bookstoreapp.dto;
 
+import com.bridgelabz.bookstoreapp.model.UserData;
 import lombok.Data;
 
-@Data
-public class ResponseDTO {
+public @Data class ResponseDTO {
     private String message;
     private Object data;
 
@@ -11,4 +11,10 @@ public class ResponseDTO {
         this.message = message;
         this.data = data;
     }
+
+    public ResponseDTO() {
+
+    }
+
+
 }

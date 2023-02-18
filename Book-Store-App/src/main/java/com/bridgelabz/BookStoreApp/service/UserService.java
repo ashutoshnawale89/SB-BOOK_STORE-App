@@ -1,145 +1,212 @@
-package com.bridgelabz.BookStoreApp.service;
+package com.bridgelabz.bookstoreapp.service;
 
-import com.bridgelabz.BookStoreApp.dto.ChangePasswordDTO;
-import com.bridgelabz.BookStoreApp.dto.LoginDTO;
-import com.bridgelabz.BookStoreApp.dto.UserDTO;
-import com.bridgelabz.BookStoreApp.entity.User;
-import com.bridgelabz.BookStoreApp.exception.BookStoreException;
-import com.bridgelabz.BookStoreApp.repository.UserRepository;
-import com.bridgelabz.BookStoreApp.util.EmailSenderService;
-import com.bridgelabz.BookStoreApp.util.TokenUtil;
-import jakarta.validation.Valid;
+import com.bridgelabz.bookstoreapp.dto.ResponseDTO;
+import com.bridgelabz.bookstoreapp.dto.UserDTO;
+import com.bridgelabz.bookstoreapp.dto.UserLoginDTO;
+import com.bridgelabz.bookstoreapp.exception.BookStoreException;
+import com.bridgelabz.bookstoreapp.model.UserData;
+import com.bridgelabz.bookstoreapp.repository.UserRegistrationRepository;
+import com.bridgelabz.bookstoreapp.util.OtpGenerator;
+import com.bridgelabz.bookstoreapp.util.TokenGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
-import java.util.Optional;
 
-//Ability to provide service to controller
+
 @Service
 @Slf4j
-public class UserService implements IUserService{
-    @Autowired
-    private UserRepository userRepo;
-    @Autowired
-    EmailSenderService mailService;
+public class UserService implements UserServiceImpl {
 
     @Autowired
-    TokenUtil util;
+    private OtpGenerator otpGenerator;
 
-    //Ability to serve controller's insert user record api call
-    public String registerUser(UserDTO userdto) {
-        Optional<User> user=userRepo.findByEmail(userdto.getEmail());
-        if (!user.isEmpty()) {
-            throw new BookStoreException("Email is alredy Register ");
-        }
-        else {
-            User newUser = new User(userdto);
-            userRepo.save(newUser);
-            String message = newUser.getFullName();
-            mailService.sendEmail(userdto.getEmail(), "Account Registration successfully", "Hello" + newUser.getFullName() + " Your Account has been created.");
-            return message;
-        }
-    }
-    //Ability to serve controller's user login api call
-    public User userLogin(LoginDTO logindto) {
-        Optional<User> newUser = userRepo.findByEmail(logindto.getEmail());
-        if(logindto.getEmail().equals(newUser.get().getEmail()) && logindto.getPassword().equals(newUser.get().getPassword())) {
-            String token = util.createToken(newUser.get().getUserID());
-            mailService.sendEmail(logindto.getEmail(),"Account Sign-up successfully","Hello Your Account has been Loggin Successfully.Your token is " + token );
-            log.info("SuccessFully Logged In");
-            return newUser.get();
-        }
-        else {
+    @Autowired
+    UserData userData;
 
-            throw new BookStoreException("User doesn't exists");
+    @Autowired
+    private UserRegistrationRepository userRepository;
 
-        }
-    }
-    //Ability to serve controller's retrieve user record by token api call
-    public User getRecordByToken(String token){
-        Integer userIdToken = util.decodeToken(token);
-        Optional<User> 	user = userRepo.findById(userIdToken);
-        if(user.isEmpty()) {
-            throw new BookStoreException("User Record doesn't exists");
-        }
-        else {
-            log.info("Record retrieved successfully for given token having id "+userIdToken);
-            return user.get();
-        }
-    }
-    //Ability to serve controller's retrieve all user records api call
-    public List<User> getAllRecords(){
-        List<User> 	userList = userRepo.findAll();
-        log.info("All Record Retrieved Successfully");
-        return userList;
-    }
-    //Ability to serve controller's retrieve user record by id api call
-    public User getRecord(Integer id){
-        Optional<User> 	user = userRepo.findById(id);
-        if(user.isEmpty()) {
-            throw new BookStoreException("User Record doesn't exists");
-        }
-        else {
-            log.info("Record retrieved successfully for id "+id);
-            return user.get();
-        }
-    }
-    //Ability to serve controller's update user record by id api call
-    public User updateRecord(Integer id, UserDTO dto) {
-        Optional<User> user = userRepo.findById(id);
-        if(user.isEmpty()) {
-            throw new BookStoreException("User Record doesn't exists");
-        }
-        else {
-            User newUser = new User(id,dto);
-            userRepo.save(newUser);
-            log.info("User data updated successfully");
-            return newUser;
-        }
-    }
-    //Ability to serve controller's change password api call
-    public User changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
-        Optional<User> user = userRepo.findByEmail(dto.getEmail());
-        if(user.isEmpty()) {
-            throw new BookStoreException("User doesn't exists");
-        }
-        else {
-            if(dto.getEmail().equals(user.get().getEmail())){
-                user.get().setPassword(dto.getNewPassword());
-                userRepo.save(user.get());
-                log.info("Password changes successfully");
-                mailService.sendEmail(user.get().getEmail(),"Password Change Successfully"+user.get().getFullName(),"Password is :"+user.get().getPassword());
+    @Autowired
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-                return user.get();
-            }
-            else {
-                throw new BookStoreException("Invalid token");
-            }
-        }
+    @Autowired
+    private EmailSenderService emailSenderService;
+
+    @Autowired
+    private TokenGenerator tokenGenerator;
+
+    Long OTP;
+
+    /**
+     * @Purpose This method is used to check user is present or not by Id
+     */
+    @Override
+    public UserData getUserDataById(Integer id) {
+        return userRepository
+                .findById(id)
+                .orElseThrow(() -> new BookStoreException(("User with Id " + id + " does not exists...")));
     }
-    //Created to serve controller's retrieve user record by email api call
-    public User getUserByEmailId(String email) {
-        Optional<User> newUser = userRepo.findByEmail(email);
-        if (newUser.isEmpty()) {
-            throw new BookStoreException("User record does not exist");
+
+    /**
+     * @Purpose This method is used to register user
+     */
+    @Override
+    public UserData  registerUser(UserDTO userDTO) {
+        UserData user = userRepository.findUserDataByEmail(userDTO.getEmail());
+        if (user == null) {
+            userData = new UserData(userDTO);
+            String epassword = bCryptPasswordEncoder.encode(userDTO.getPassword());
+            userData.setPassword(epassword);
+            System.out.println("password is " + epassword);
+            userData = userRepository.save(userData);
+            System.out.println(userData);
+            OTP = generateOtpAndSendEmail(userData);
+            return userData;
         } else {
-            return newUser.get();
+            throw new BookStoreException("Email already exists",
+                    BookStoreException.ExceptionType.USER_ALREADY_PRESENT);
         }
     }
-    public String deleteUserByToken(String token) {
-        Integer userIdToken = util.decodeToken(token);
-        Optional<User> 	user = userRepo.findById(userIdToken);
-        if(user.isEmpty()) {
-            throw new BookStoreException("User Record doesn't exists");
+
+
+    /**
+     * @Purpose This method is used to verify otp while user registration
+     */
+    @Override
+    public ResponseDTO verifyOtp(Long otp) {
+        if (OTP.equals(otp) && userData.getIsVerified().equals(false)) {
+            userData.setIsVerified(true);
+            userRepository.save(userData);
+            return new ResponseDTO("otp verified", userData);
+        }
+        else if (userData.getIsVerified().equals(true)) {
+            return new ResponseDTO("User is aAlredy Verified" , userData);
         }
         else {
-            userRepo.deleteById(user.get().getUserID());
-            log.info("Record Delete successfully for given token having id "+userIdToken);
-            return "Record Delete successfully for given token id is "+token ;
+            return new ResponseDTO("Invalid otp", "please enter correct otp");
         }
-
     }
+
+    /**
+     * @Purpose This method is used to login user with
+     * correct email and password
+     */
+    @Override
+    public ResponseDTO loginUser(UserLoginDTO userLoginDTO) {
+        System.out.println(userLoginDTO.getEmail());
+        UserData userDataByEmail = userRepository.findUserDataByEmail(userLoginDTO.getEmail());
+        if (userDataByEmail == null) {
+            throw new BookStoreException("Enter registered Email", BookStoreException.ExceptionType.EMAIL_NOT_FOUND);
+        }
+        if (userDataByEmail.getIsVerified()) {
+            boolean isPassword = bCryptPasswordEncoder.matches(userLoginDTO.getPassword(),
+                    userDataByEmail.getPassword());
+            if (!isPassword) {
+                throw new BookStoreException("Invalid Password!!!Please Enter Correct Password",
+                        BookStoreException.ExceptionType.PASSWORD_INVALID);
+            }
+            String jwtToken = tokenGenerator.generateLoginToken(userDataByEmail);
+            userDataByEmail.setJwtToken(jwtToken);
+            userRepository.save(userDataByEmail);
+            return new ResponseDTO("Logged in successfully", userDataByEmail);
+        }
+        OTP = generateOtpAndSendEmail(userDataByEmail);
+        throw new BookStoreException("Please verify your email before proceeding",
+                BookStoreException.ExceptionType.EMAIL_NOT_FOUND);
+    }
+
+    /**
+     * @Purpose This method is used to generate otp and send email
+     */
+    private Long generateOtpAndSendEmail(UserData userData) {
+        long generatedOtp = otpGenerator.generateOTP();
+        String requestUrl = "http://localhost:9094/bookstore/verify/email/" + generatedOtp;
+        System.out.println("the generated otp is " + generatedOtp);
+        try {
+            emailSenderService.sendEmail(
+                    userData.getEmail(),
+                    "Your Registration is successful",
+                    requestUrl + "\n your generated otp is "
+                            + generatedOtp +
+                            " click on the above link to verify the user");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return generatedOtp;
+    }
+
+
+
+    /**
+     * @Purpose This method is used to generate otp for forgot password request
+     */
+    @Override
+    public String forgotPasswordRequest(String email) {
+        userData = userRepository.findUserDataByEmail(email);
+        if (userData == null) {
+            throw new BookStoreException("User Not Found");
+        }
+        OTP = otpGenerator.generateOTP();
+        String generatedOtp = "Otp is generated \n" + OTP;
+        emailSenderService.sendEmail(userData.getEmail(), "Your otp is ", generatedOtp);
+        return "Reset Password otp Has Been Sent To Your Email Address " + userData.getEmail();
+    }
+
+    /**
+     * @Purpose This method is used to reset password
+     */
+    @Override
+    public String resetPassword(String password, Long mailOtp) {
+        String ePassword = bCryptPasswordEncoder.encode(password);
+        if (!mailOtp.equals(OTP)) {
+            throw new BookStoreException("Enter Correct OTP");
+        }
+        userData.setPassword(ePassword);
+        userRepository.save(userData);
+        return "password Reset successfully";
+    }
+
+
+
+    /**
+     * @Purpose This method is used to update the user data
+     */
+    @Override
+    public UserData updateUserData(Integer id, UserDTO userDTO) {
+        UserData updateUser = this.getUserDataById(id);
+        updateUser.updateUserData(userDTO);
+        updateUser.setPassword(bCryptPasswordEncoder.encode(updateUser.getPassword()));
+        return userRepository.save(updateUser);
+    }
+
+    /**
+     * @Purpose This method is used to delete the user data
+     */
+    @Override
+    public void deleteUserData(Integer userId) {
+        UserData deleteUser = this.getUserDataById(userId);
+        userRepository.delete(deleteUser);
+    }
+
+    /**
+     * @Purpose This method is used to get list of all user data
+     */
+    @Override
+    public List<UserData> getUserData() {
+        return userRepository.findAll();
+    }
+
+    @Override
+    public int getAllUserNumber() {
+        List<UserData> allData=getUserData();
+        int count=0;
+        for(int i = 0; allData.size() > i; i++){
+            count++;
+        }
+        return count;
+    }
+
 }

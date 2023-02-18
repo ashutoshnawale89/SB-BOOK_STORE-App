@@ -1,51 +1,80 @@
-package com.bridgelabz.BookStoreApp.controller;
-
-import com.bridgelabz.BookStoreApp.dto.OrderDTO;
-import com.bridgelabz.BookStoreApp.dto.ResponseDTO;
-import com.bridgelabz.BookStoreApp.service.IOrderService;
-import jakarta.validation.Valid;
+package com.bridgelabz.bookstoreapp.controller;
+import com.bridgelabz.bookstoreapp.dto.OrderDTO;
+import com.bridgelabz.bookstoreapp.dto.ResponseDTO;
+import com.bridgelabz.bookstoreapp.model.OrderData;
+import com.bridgelabz.bookstoreapp.service.IOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin
-@RestController
-@RequestMapping("/orderdetails")
-public class OrderController {
-    //Autowired IOrderService dependency to inject its dependecy here
-    @Autowired
-    IOrderService orderService;
+import javax.mail.MessagingException;
+import java.util.List;
 
-    //Ability to call api to insert order record
-    @PostMapping("/insert")
-    public ResponseEntity<ResponseDTO> insertOrder(@Valid @RequestBody OrderDTO orderdto){
-        ResponseDTO dto = new ResponseDTO("Order registered successfully !",orderService.insertOrder(orderdto));
-        return new ResponseEntity(dto, HttpStatus.CREATED);
+@RestController
+@CrossOrigin( allowedHeaders = "*", origins = "*")
+@RequestMapping("/order")
+public class OrderController {
+
+    @Autowired
+    private IOrderService iOrderService;
+
+    /**
+     *
+     * @param userId
+     * @param orderDto
+     * place the order using userId
+     */
+    @PostMapping("/placeOrder/{userId}")
+    public ResponseEntity<ResponseDTO> placeOrder(@PathVariable int userId, @RequestBody OrderDTO orderDto) throws MessagingException {
+        OrderData order =  iOrderService.placeOrder(userId, orderDto);
+        ResponseDTO response = new ResponseDTO("Order Placed", "order Id :"+order.getOrderId());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
-    //Ability to call api retrieve all order records
-    @GetMapping("/retrieveAllOrders")
-    public ResponseEntity<ResponseDTO> getAllOrderRecords(){
-        ResponseDTO dto = new ResponseDTO("All records retrieved successfully !",orderService.getAllOrderRecords());
-        return new ResponseEntity(dto,HttpStatus.OK);
+
+    /**
+     *
+     * @param userId
+     * retrieve order data by userId
+     */
+    @GetMapping("/userOrders/{userId}")
+    public ResponseEntity<ResponseDTO> getUserOrders(@PathVariable("userId") int userId){
+        List<OrderData> userOrders = iOrderService.userOrders(userId);
+        ResponseDTO response = new ResponseDTO("Orders of user ", userOrders);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
-    //Ability to call api to retrieve order records by id
-    @GetMapping("/retrieveOrder/{id}")
-    public ResponseEntity<ResponseDTO> getBookRecord(@PathVariable Integer id){
-        ResponseDTO dto = new ResponseDTO("Record retrieved successfully !",orderService.getOrderRecord(id));
-        return new ResponseEntity(dto,HttpStatus.OK);
+
+    /**
+     * To retrieve all orders data
+     */
+    @GetMapping("/getAllOrder")
+    public ResponseEntity<ResponseDTO> getAllOrders(){
+        List<OrderData> allOrderData = iOrderService.getAllOrders();
+        ResponseDTO responseDTO = new ResponseDTO("Order data:", allOrderData);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
-    //Ability to call api to update order record by id
-    @PutMapping("/updateOrder/{id}")
-    public ResponseEntity<ResponseDTO> updateBookRecord(@PathVariable Integer id,@Valid @RequestBody OrderDTO orderdto){
-        ResponseDTO dto = new ResponseDTO("Record updated successfully !",orderService.updateOrderRecord(id,orderdto));
-        return new ResponseEntity(dto,HttpStatus.ACCEPTED);
+
+    @GetMapping("/getToatalOrderNumber")
+    public ResponseEntity<ResponseDTO> getAllOrdersNumber(){
+        int allOrderData = iOrderService.getAllOrdersNumber();
+        ResponseDTO responseDTO = new ResponseDTO("Order data:", allOrderData);
+        return new ResponseEntity<>(responseDTO, HttpStatus.OK);
     }
-    //Ability to call api to delete order record by id
-    @DeleteMapping("/deleteOrder/{id}")
-    public ResponseEntity<ResponseDTO> deleteOrderRecord(@PathVariable Integer id){
-        ResponseDTO dto = new ResponseDTO("Record deleted successfully !",orderService.deleteOrderRecord(id));
-        return new ResponseEntity(dto,HttpStatus.ACCEPTED);
+
+
+    /**
+     *
+     * @param orderId
+     * @param userId
+     * cancel the order by using userId and orderId
+     */
+    @PutMapping("/cancelOrder/{userId}/{orderId}")
+    public ResponseEntity<ResponseDTO> cancelOrder(@PathVariable int orderId, @PathVariable int userId) {
+        String order = iOrderService.cancelOrder(orderId, userId);
+        ResponseDTO response = new ResponseDTO("Order Cancelled ", order);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
 
 }
+

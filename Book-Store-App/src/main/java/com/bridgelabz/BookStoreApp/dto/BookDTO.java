@@ -1,19 +1,20 @@
-package com.bridgelabz.BookStoreApp.dto;
-
-import jakarta.validation.constraints.NotEmpty;
+package com.bridgelabz.bookstoreapp.dto;
 import lombok.Data;
+import lombok.ToString;
+
 
 @Data
-public class BookDTO {
-    @NotEmpty(message="Please enter book name")
+public @ToString class BookDTO {
+
     private String bookName;
-    @NotEmpty(message="Please enter author name")
+
     private String authorName;
-    private Integer price;
-    private Integer quantity;
 
     private String bookDescription;
 
     private String bookImg;
 
+    private Integer price;
+
+    private Integer quantity;
 }

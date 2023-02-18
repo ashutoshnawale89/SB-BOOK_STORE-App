@@ -1,17 +1,15 @@
-package com.bridgelabz.BookStoreApp.dto;
-
-import jakarta.validation.constraints.NotEmpty;
-import lombok.Data;
+package com.bridgelabz.bookstoreapp.dto;
+import lombok.*;
 
 @Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderDTO {
-    private Integer quantity;
-    @NotEmpty(message="Please provide address")
+    private int quantity;
     private String address;
-    private Integer userID;
-
-    private Integer bookID;
-    private boolean cancel;
-    private  Integer cartID;
+    private int bookId;
+    private int cartId;
 }
 

@@ -1,115 +1,152 @@
-package com.bridgelabz.BookStoreApp.service;
+package com.bridgelabz.bookstoreapp.service;
 
-import com.bridgelabz.BookStoreApp.dto.OrderDTO;
-import com.bridgelabz.BookStoreApp.entity.Book;
-import com.bridgelabz.BookStoreApp.entity.Cart;
-import com.bridgelabz.BookStoreApp.entity.Order;
-import com.bridgelabz.BookStoreApp.entity.User;
-import com.bridgelabz.BookStoreApp.exception.BookStoreException;
-import com.bridgelabz.BookStoreApp.repository.BookRepository;
-import com.bridgelabz.BookStoreApp.repository.CartRepository;
-import com.bridgelabz.BookStoreApp.repository.OrderRepository;
-import com.bridgelabz.BookStoreApp.repository.UserRepository;
-import com.bridgelabz.BookStoreApp.util.EmailSenderService;
-import lombok.extern.slf4j.Slf4j;
+import com.bridgelabz.bookstoreapp.dto.OrderDTO;
+import com.bridgelabz.bookstoreapp.exception.BookStoreException;
+import com.bridgelabz.bookstoreapp.model.BookData;
+import com.bridgelabz.bookstoreapp.model.CartData;
+import com.bridgelabz.bookstoreapp.model.OrderData;
+import com.bridgelabz.bookstoreapp.model.UserData;
+import com.bridgelabz.bookstoreapp.repository.CartRepository;
+import com.bridgelabz.bookstoreapp.repository.OrderRepository;
+import com.bridgelabz.bookstoreapp.repository.UserRegistrationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
-@Slf4j
 public class OrderService implements IOrderService {
-    //Autowired to inject dependency here
-    @Autowired
-    private OrderRepository orderRepo;
-    @Autowired
-    private BookRepository bookRepo;
-    @Autowired
-    private UserRepository userRepo;
 
     @Autowired
-    EmailSenderService mailService;
+    private UserRegistrationRepository userRepo;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private CartRepository cartRepository;
+    @Autowired
+    private EmailSenderService mailService;
 
-    //Ability to serve controller's insert order record api call
-    public Order insertOrder(OrderDTO orderdto) {
-        Optional<Book> book = bookRepo.findById(orderdto.getBookID());
-        Optional<User> user = userRepo.findById(orderdto.getUserID());
-        if(book.isPresent() && user.isPresent()) {
-            if(orderdto.getQuantity() < book.get().getQuantity()) {
-                Order newOrder = new Order(book.get().getPrice(),orderdto.getQuantity(),orderdto.getAddress(),book.get(),user.get(),orderdto.isCancel());
-                orderRepo.save(newOrder);
-                book.get().setQuantity(book.get().getQuantity() - orderdto.getQuantity());
-                bookRepo.save(book.get());
-                log.info("Order record inserted successfully");
-                mailService.sendEmail(user.get().getEmail(),"Your Order Placed successfully","Hello, Your order ID is " + newOrder.getOrderID() + " & it  is placed successfully on "+ newOrder.getDate()+" and will be delivered to you shortly.");
-                return newOrder;
-            }else {
-                throw new BookStoreException("Requested quantity is not available");
-            }
-        }else {
-            throw new BookStoreException("Book or User doesn't exists");
-        }
-    }
-    //Ability to serve controller's retrieve all order records api call
-    public List<Order> getAllOrderRecords(){
-        List<Order> orderList =orderRepo.findAll();
-        log.info("ALL order records retrieved successfully");
-        return orderList;
-    }
-    //Ability to serve controller's retrieve order record by id api call
-    public Order getOrderRecord(Integer id) {
-        Optional<Order> order = orderRepo.findById(id);
-        if(order.isEmpty()) {
-            throw new BookStoreException("Order Record doesn't exists");
-        }
-        else {
-            log.info("Order record retrieved successfully for id "+id);
-            return order.get();
-        }
-    }
-    //Ability to serve controller's update order record by id api call
-    public Order updateOrderRecord(Integer id,OrderDTO dto) {
-        Optional<Order> order = orderRepo.findById(id);
-        Optional<Book>  book = bookRepo.findById(dto.getBookID());
-        Optional<User> user = userRepo.findById(dto.getUserID());
-        if(order.isEmpty()) {
-            throw new BookStoreException("Order Record doesn't exists");
-        }
-        else {
-            if(book.isPresent() && user.isPresent()) {
-                if(dto.getQuantity() < book.get().getQuantity()) {
-                    Order newOrder = new Order(id,dto.getQuantity(),dto.getAddress(),book.get(),user.get(),dto.isCancel());
-                    orderRepo.save(newOrder);
-                    log.info("Order record updated successfully for id "+id);
-                    book.get().setQuantity(book.get().getQuantity() -(dto.getQuantity() -order.get().getQuantity()));
-                    bookRepo.save(book.get());
-                    return newOrder;
-                }else {
-                    throw new BookStoreException("Requested quantity is not available");
+    @Autowired
+    private BookService bookService;
+
+    List<OrderData> orderList = new ArrayList<>();
+
+    @Override
+    public OrderData placeOrder(int userId, OrderDTO orderDTO) {
+
+        List<CartData> cartModel = cartRepository.findByUserId(userId);
+        UserData user = userRepo.findById(userId).orElse(null);
+        user.setAddress(orderDTO.getAddress());
+
+        if (!cartModel.isEmpty()) {
+            {
+                double totalOrderPrice = 0;
+                int totalOrderQty = 0;
+                List<BookData> orderedBooks = new ArrayList<>();
+
+                String address = "";
+                for (int i = 0; i < cartModel.size(); i++) {
+                    totalOrderPrice += cartModel.get(i).getTotalPrice();
+                    totalOrderQty += cartModel.get(i).getQuantity();
+                    orderedBooks.add(cartModel.get(i).getBook());
                 }
+                if (orderDTO.getAddress() == null) {
+                    address = user.getAddress();
+                } else
+                    address = orderDTO.getAddress();
+                OrderData newOrder = new OrderData(userId, address, cartModel, orderedBooks, totalOrderQty, totalOrderPrice);
+                orderList.add(newOrder);
+                orderRepository.save(newOrder);
+
+                mailService.sendEmail(user.getEmail(), "Order Placed",
+                        "Order Details:" +
+                                "\n" +
+                                "\n" + "Order ID ####### " + newOrder.getOrderId() +
+                                "\n" + "Order Address :" + newOrder.getAddress() +
+                                "\n" + "Order Quantity :" + newOrder.getQuantity() +
+                                "\n" + "Order Date :" + newOrder.getOrderDate() +
+                                "\n" + "Order Price :" + newOrder.getTotalPrice());
+
+                for (int i = 0; i < cartModel.size(); i++) {
+                    BookData book = cartModel.get(i).getBook();
+                    int updatedQty = book.getQuantity() - cartModel.get(i).getQuantity();
+                    book.setQuantity(updatedQty);
+                    cartRepository.deleteById(cartModel.get(i).getCartId());
+                }
+                return newOrder;
             }
-            else {
-                throw new BookStoreException("Book or User doesn't exists");
+        } else {
+            throw (new BookStoreException("Sorry we cannot placed your Order...! "));
+        }
+    }
+
+    @Override
+    public List<OrderData> getAllOrders() {
+        List<OrderData> getOrder = orderRepository.findAll();
+//        for(int i=0; i < getOrder.size();i++) {
+//            System.out.println(getOrder.get(i));
+//        }
+        return getOrder;
+    }
+
+
+
+    @Override
+    public List<OrderData> userOrders(int userId) {
+        return orderRepository.findByUserId(userId);
+    }
+
+
+    @Override
+    public String cancelOrder(int orderId, int userId) {
+        OrderData order = orderRepository.findById(orderId).orElse(null);
+        List<BookData> book = order.getBook();
+        UserData user = userRepo.findById(userId).orElse(null);
+        if (user != null) {
+
+                if (order != null) {
+                    order.setCancel(true);
+                    mailService.sendEmail(user.getEmail(), "For Cancel Order", "Order Id " + orderId + "\n" + order);
+                    orderRepository.save(order);
+
+                    System.out.println(book);
+                    for (int j = 0; j < orderList.size(); j++) {
+                        if (orderList.get(j).getOrderId() == orderId) {
+                            for (int i = 0; i < book.size(); i++) {
+
+                                    int orderedBookId = orderList.get(j).getCartModel().get(i).getBook().getBookId();
+                                    int orderedQuantity = orderList.get(j).getCartModel().get(j).getQuantity();
+                                    System.out.println(orderedQuantity);
+                                    int bookId = book.get(i).getBookId();
+                                    if (orderedBookId == bookId) {
+                                        BookData book1 = bookService.getBookModelById(order.getBook().get(i).getBookId());
+                                        bookService.updateBookQuantity(book1.getBookId(), book1.getQuantity() + orderedQuantity);
+                                    }
+
+                            }
+                        }
+                    }
+                    return "Order Cancelled";
+                }
 
             }
-        }
-    }
-    //Ability to serve controller's delete order record by id api call
-    public Order deleteOrderRecord(Integer id) {
-        Optional<Order> order = orderRepo.findById(id);
-        Optional<Book>  book = bookRepo.findById(order.get().getBook().getBookID());
-        if(order.isEmpty()) {
-            throw new BookStoreException("Order Record doesn't exists");
-        }
         else {
-            book.get().setQuantity(book.get().getQuantity() + order.get().getQuantity());
-            bookRepo.save(book.get());
-            orderRepo.deleteById(id);
-            log.info("Order record deleted successfully for id "+id);
-            return order.get();
+            throw new BookStoreException("Order is already canceled!");
         }
+        return null;
     }
+
+    @Override
+    public int getAllOrdersNumber() {
+        List<OrderData> getOrder=getAllOrders();
+        int count=0;
+        for(int i=0; getOrder.size() > i; i++){
+            count++;
+        }
+        return count;
+    }
+
+
+
 
 }

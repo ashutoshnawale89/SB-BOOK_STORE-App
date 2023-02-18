@@ -1,91 +1,91 @@
-package com.bridgelabz.BookStoreApp.controller;
+package com.bridgelabz.bookstoreapp.controller;
 
-import com.bridgelabz.BookStoreApp.dto.BookDTO;
-import com.bridgelabz.BookStoreApp.dto.ResponseDTO;
-import com.bridgelabz.BookStoreApp.entity.Book;
-import com.bridgelabz.BookStoreApp.service.IBookService;
-import jakarta.validation.Valid;
+import com.bridgelabz.bookstoreapp.dto.BookDTO;
+import com.bridgelabz.bookstoreapp.dto.ResponseDTO;
+import com.bridgelabz.bookstoreapp.model.BookData;
+import com.bridgelabz.bookstoreapp.service.BookServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 import java.util.List;
 
-//Controller class to make api calls
-@CrossOrigin
+@CrossOrigin( allowedHeaders = "*", origins = "*")
+@RequestMapping("/book")
 @RestController
-@RequestMapping("/bookdetails")
 public class BookController {
+
     @Autowired
-    private IBookService bookService;
+    private BookServiceImpl bookService;
 
-    //Ability to call api to insert Book record
-    @PostMapping("/insert")
-    public ResponseEntity<ResponseDTO> insertBook(@Valid @RequestBody BookDTO bookdto) {
-        ResponseDTO dto = new ResponseDTO("Book registered successfully !", bookService.insertBook(bookdto));
-        return new ResponseEntity(dto, HttpStatus.CREATED);
+
+    @GetMapping("/getAll")
+    public ResponseEntity<ResponseDTO> getAllBookData() {
+        List<BookData> listOfBooks = bookService.getAllBookData();
+        ResponseDTO responseDto = new ResponseDTO("Data retrieved successfully :", listOfBooks);
+        return new ResponseEntity(responseDto, HttpStatus.OK);
     }
 
-    //Ability to call api to retrieve all book records
-    @GetMapping("/retrieveAllBooks")
-    public ResponseEntity<ResponseDTO> getAllBookRecords() {
-        List<Book> newBook = bookService.getAllBookRecords();
-        ResponseDTO dto = new ResponseDTO("All records retrieved successfully !", newBook);
-        return new ResponseEntity(dto, HttpStatus.OK);
+    @GetMapping("/get/{bookId}")
+    public ResponseEntity<ResponseDTO> getBookModelById(@PathVariable int bookId) {
+        BookData bookModel = bookService.getBookModelById(bookId);
+        ResponseDTO responseDto = new ResponseDTO("Success Call for Book Id!!!", bookModel);
+        return new ResponseEntity<>(responseDto, HttpStatus.OK);
     }
 
-    //Ability to call api to retrieve record by book name
-    @GetMapping("/retrieve/{bookName}")
-    public ResponseEntity<ResponseDTO> getRecordByBookName(@PathVariable String bookName){
-        List<Book> newBook = bookService.getRecordByBookName(bookName);
-        ResponseDTO dto = new ResponseDTO("Record for particular book retrieved successfully !",newBook);
-        return new ResponseEntity(dto,HttpStatus.OK);
+    @GetMapping("/searchByName/{name}")
+    public ResponseEntity<ResponseDTO> searchByName(@PathVariable String name ) {
+        List<BookData> bookDataDataList = bookService.searchByName(name);
+        ResponseDTO respDTO = new ResponseDTO("Books are ....", bookDataDataList);
+        return new ResponseEntity<>(respDTO, HttpStatus.OK);
     }
 
-    //Ability to call api to get record by id
-    @GetMapping("/retrieveBook/{id}")
-    public ResponseEntity<ResponseDTO> getBookRecord(@PathVariable Integer id) {
-        ResponseDTO dto = new ResponseDTO("Record retrieved successfully !", bookService.getBookRecord(id));
-        return new ResponseEntity(dto, HttpStatus.OK);
+    /**
+     * @Purpose : To show total Book Count in book store
+     */
+    @GetMapping("/totalBookCount")
+    public ResponseEntity<ResponseDTO> getTotalBookCount() {
+        int totalCount = bookService.getTotalBooksCount();
+        return new ResponseEntity<>(new ResponseDTO("Total books are  : ", totalCount), HttpStatus.OK);
     }
 
-    //Ability to call api to update book record by id
-    @PutMapping("/updateBook/{id}")
-    public ResponseEntity<ResponseDTO> updateBookRecord(@PathVariable Integer id, @Valid @RequestBody BookDTO bookdto) {
-        ResponseDTO dto = new ResponseDTO("Record updated successfully !", bookService.updateBookRecord(id, bookdto));
-        return new ResponseEntity(dto, HttpStatus.ACCEPTED);
+    @PostMapping("/addBook")
+    public ResponseEntity<ResponseDTO> addUserInBookStore(@RequestBody BookDTO bookDto) {
+        BookData newBook = bookService.createBook(bookDto);
+        ResponseDTO responseDto = new ResponseDTO("Created the new book in book store", newBook);
+        return new ResponseEntity(responseDto, HttpStatus.CREATED);
     }
 
-    //Ability to call api to delete book record by id
-    @DeleteMapping("/deleteBook/{id}")
-    public ResponseEntity<ResponseDTO> deleteBookRecord(@PathVariable Integer id) {
-        ResponseDTO dto = new ResponseDTO("Record deleted successfully !", bookService.deleteBookRecord(id));
-        return new ResponseEntity(dto, HttpStatus.ACCEPTED);
+    @PutMapping("/updateBookById/{bookId}")
+    public ResponseEntity<ResponseDTO> updateRecordById(@PathVariable int bookId, @Valid @RequestBody BookDTO bookDTO) {
+        BookData updateRecord = bookService.updateRecordById(bookDTO,bookId);
+        ResponseDTO responseDto = new ResponseDTO(" Book Record updated successfully by Id", updateRecord);
+        return new ResponseEntity<>(responseDto, HttpStatus.ACCEPTED);
     }
 
-    //Ability to call api to sort book records in ascending order
+    @DeleteMapping("/deleteBook/{bookId}")
+    public ResponseEntity<ResponseDTO> deleteRecordById(@PathVariable int bookId) {
+        BookData bookModel = bookService.deleteBookRecord(bookId);
+        ResponseDTO responseDto = new ResponseDTO("Record deleted successfully !", bookModel);
+        return new ResponseEntity(responseDto, HttpStatus.ACCEPTED);
+    }
+
     @GetMapping("/sortAsc")
-    public ResponseEntity<ResponseDTO> sortRecordAsc() {
-        List<Book> newBook = bookService.sortRecordAsc();
-        ResponseDTO dto = new ResponseDTO("Records for book sorted in ascending order successfully !", newBook);
-        return new ResponseEntity(dto, HttpStatus.OK);
+    public ResponseEntity<ResponseDTO> getBooksInAscendingOrder() {
+        List<BookData> listOfBooks = bookService.sortedListOfBooksInAscendingOrder();
+        ResponseDTO responseDto = new ResponseDTO("Data retrieved successfully :", listOfBooks);
+        return new ResponseEntity<>(responseDto, HttpStatus.OK);
+
     }
 
-    //Ability to call api to sort book records in descending order
     @GetMapping("/sortDesc")
-    public ResponseEntity<ResponseDTO> sortRecordDesc() {
-        List<Book> newBook = bookService.sortRecordDesc();
-        ResponseDTO dto = new ResponseDTO("Records for book sorted in descending order successfully !", newBook);
-        return new ResponseEntity(dto, HttpStatus.OK);
-    }
+    public ResponseEntity<ResponseDTO> getBooksInDescendingOrder() {
+        List<BookData> listOfBooks = bookService.sortedListOfBooksInDescendingOrder();
+        ResponseDTO responseDto = new ResponseDTO("Data retrieved successfully :", listOfBooks);
+        return new ResponseEntity(responseDto, HttpStatus.OK);
 
-    ///Ability to call api to update quantity of books by id
-    @PutMapping("/updateQuantity/{id}")
-    public ResponseEntity<ResponseDTO> updateQuantity(@PathVariable Integer id,@RequestParam Integer quantity){
-        Book newBook = bookService.updateQuantity(id,quantity);
-        ResponseDTO dto = new ResponseDTO("Quantity for book record updated successfully !",newBook);
-        return new ResponseEntity(dto,HttpStatus.OK);
     }
-
 }

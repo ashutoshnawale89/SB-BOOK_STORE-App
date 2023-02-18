@@ -1,106 +1,103 @@
-package com.bridgelabz.BookStoreApp.service;
-
-import com.bridgelabz.BookStoreApp.dto.BookDTO;
-import com.bridgelabz.BookStoreApp.entity.Book;
-import com.bridgelabz.BookStoreApp.exception.BookStoreException;
-import com.bridgelabz.BookStoreApp.repository.BookRepository;
-import lombok.extern.slf4j.Slf4j;
+package com.bridgelabz.bookstoreapp.service;
+import com.bridgelabz.bookstoreapp.dto.BookDTO;
+import com.bridgelabz.bookstoreapp.exception.BookStoreException;
+import com.bridgelabz.bookstoreapp.model.BookData;
+import com.bridgelabz.bookstoreapp.repository.BookRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
-//Ability to provide service to controllers api calls
 @Service
-@Slf4j
-public class BookService implements IBookService{
-    //Autowired BookRepository to inject its dependency here
+public class BookService implements BookServiceImpl {
+
+
     @Autowired
     private BookRepository bookRepo;
-    //Ability to serve to controller's insert api call
-    public Book insertBook(BookDTO bookdto) {
-        Book newBook = new Book(bookdto);
-        log.info("Book record inserted successfully");
-        return bookRepo.save(newBook);
+
+
+    @Override
+    public BookData createBook(BookDTO bookDto) {
+        BookData book = new BookData(bookDto);
+        bookRepo.save(book);
+        return book;
     }
-    //Ability to serve to controller's retrieving all records api call
-    public List<Book> getAllBookRecords(){
-        List<Book> 	bookList =bookRepo.findAll();
-        log.info("All book records retrieved successfully");
-        return bookList;
+
+    @Override
+    public List<BookData> getAllBookData() {
+        List<BookData> getBooks=bookRepo.findAll();
+        return getBooks;
     }
-    //Ability to serve to controller's retrieving all records api call
-    public List<Book> getBookRecord(Integer id) {
-        List<Book> book = bookRepo.findByBookId(id);
-        if(book.isEmpty()) {
-            throw new BookStoreException("Book Record doesn't exists");
-        }
-        else {
-            log.info("Book record retrieved successfully for id "+id);
-            return book;
+
+    @Override
+    public BookData updateRecordById(BookDTO bookDto, int id) {
+        Optional<BookData> book = bookRepo.findById(id);
+        book.get().setAuthorName(bookDto.getAuthorName());
+        book.get().setBookDescription(bookDto.getBookDescription());
+        book.get().setBookImg(bookDto.getBookImg());
+        book.get().setBookName(bookDto.getBookName());
+        book.get().setPrice(bookDto.getPrice());
+        book.get().setQuantity(bookDto.getQuantity());
+        bookRepo.save(book.get());
+        return book.get();
+    }
+
+
+
+    @Override
+    public BookData deleteBookRecord(int bookId) {
+        Optional<BookData> book = bookRepo.findById(bookId);
+        if (book.isPresent()) {
+            bookRepo.deleteById(bookId);
+            return book.get();
+
+        } else {
+            return null;
         }
     }
-    //Ability to serve to controller's update record by id api call
-    public Book updateBookRecord(Integer id,BookDTO dto) {
-        Optional<Book> book = bookRepo.findById(id);
-        if(book.isEmpty()) {
-            throw new BookStoreException("Book Record doesn't exists");
-        }
-        else {
-            Book newBook = new Book(id,dto);
-            bookRepo.save(newBook);
-            log.info("Book record updated successfully for id "+id);
-            return newBook;
-        }
+    @Override
+    public BookData getBookModelById(int bookId) {
+        return bookRepo.findById(bookId)
+                .orElseThrow(() -> new BookStoreException("Book not found In the List"));
+    }
+    @Override
+    public List<BookData> sortedListOfBooksInAscendingOrder() {
+        List<BookData> getSortedList=  bookRepo.findAll(Sort.by(Sort.Direction.ASC,"price"));
+        return getSortedList;
+    }
+
+    @Override
+    public List<BookData> sortedListOfBooksInDescendingOrder() {
+        List<BookData> getSortedListInDesc = bookRepo.findAll(Sort.by(Sort.Direction.DESC,"price"));
+        return getSortedListInDesc;
 
     }
-    //Ability to serve to controller's retrieve record by book name api call
-    public List<Book> getRecordByBookName(String bookName) {
-        List<Book> book = bookRepo.findByBookName(bookName);
-        if(book.isEmpty()) {
-            throw new BookStoreException("Book doesn't exists");
-        }
-        else {
-            log.info("Book record retrieved successfully for Book Name : "+bookName);
-            return book;
-        }
+
+    @Override
+    public int getTotalBooksCount() {
+        return bookRepo.findAll().size();
     }
-    //Ability to serve to controller's delete record api call
-    public Book deleteBookRecord(Integer id) {
-        Optional<Book> book = bookRepo.findById(id);
-        if(book.isEmpty()) {
-            throw new BookStoreException("Book Record doesn't exists");
-        }
-        else {
-            bookRepo.deleteById(id);
-            log.info("Book record deleted successfully for id "+id);
-            return book.get();
-        }
+
+    @Override
+    public List<BookData> searchByName(String name) {
+        String name1 = name.toLowerCase();
+        List<BookData> bookData = getAllBookData();
+        List<BookData> collect = bookData.stream()
+                .filter(bookDataData -> bookDataData.getBookName().toLowerCase().contains(name1))
+                .collect(Collectors.toList());
+
+        return collect;
     }
-    //Ability to serve to controller's sort all records in ascending order api call
-    public List<Book> sortRecordAsc(){
-        List<Book> listOfBooks = bookRepo.sortBooksAsc();
-        log.info("Book records sorted in ascending order by price successfully");
-        return listOfBooks;
-    }
-    //Ability to serve to controller's sort all records in descending order api call
-    public List<Book> sortRecordDesc(){
-        List<Book> listOfBooks = bookRepo.sortBooksDesc();
-        log.info("Book records sorted in descending order by price successfully");
-        return listOfBooks;
-    }
-    //Ability to serve to controller's update book quantity api call
-    public Book updateQuantity(Integer id, Integer quantity) {
-        Optional<Book> book = bookRepo.findById(id);
-        if(book.isEmpty()) {
-            throw new BookStoreException("Book Record doesn't exists");
+
+
+    public BookData updateBookQuantity(int bookId, int quantity) {
+        BookData editbook = bookRepo.findById(bookId).orElse(null);
+        if (editbook != null) {
+            editbook.setQuantity(quantity);
+            return bookRepo.save(editbook);
         }
-        else {
-            book.get().setQuantity(quantity);
-            bookRepo.save(book.get());
-            log.info("Quantity for book record updated successfully for id "+id);
-            return book.get();
-        }
+        return null;
     }
 }

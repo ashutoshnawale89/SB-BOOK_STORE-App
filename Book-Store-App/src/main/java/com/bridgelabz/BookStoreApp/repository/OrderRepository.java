@@ -1,12 +1,18 @@
-package com.bridgelabz.BookStoreApp.repository;
+package com.bridgelabz.bookstoreapp.repository;
 
-import com.bridgelabz.BookStoreApp.entity.Order;
+import com.bridgelabz.bookstoreapp.model.OrderData;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
 
-//Ability to provide CRUD operations and create table for given entity
-public interface OrderRepository extends JpaRepository<Order, Integer> {
-    @Query(value="select price from order_details,book where book.bookid=order_details.bookid and id =:id",nativeQuery = true)
-    public Integer getPrice(Integer id);
+import java.util.List;
+
+
+@Repository
+public interface OrderRepository extends JpaRepository<OrderData,Integer> {
+    @Query("from orderData WHERE userId=:userId  ")
+    List<OrderData> findByUserId(int userId);
+
+
 
 }
